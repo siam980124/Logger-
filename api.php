@@ -8,59 +8,48 @@ if (!isset($_GET['eiin']) || empty(trim($_GET['eiin']))) {
 }
 
 $eiin = trim($_GET['eiin']);
-
-// Basic validation — EIIN is numeric, typically 6 digits
 if (!ctype_digit($eiin)) {
     echo json_encode(["error" => "EIIN অবশ্যই সংখ্যা হতে হবে"]);
     exit;
 }
 
-$url = "http://emis.gov.bd/emis/Portal/GetTeacherDetails";
+$portal_url = "http://emis.gov.bd/EMIS/portal";
+$api_url    = "http://emis.gov.bd/emis/Portal/GetTeacherDetails";
 
-$headers = [
-    "User-Agent: Mozilla/5.0 (Linux; Android 13; 220333QAG Build/TKQ1.221114.001) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.138 Mobile Safari/537.36",
-    "Accept: application/json, text/javascript, */*; q=0.01",
-    "Accept-Encoding: gzip, deflate",
-    "Content-Type: application/x-www-form-urlencoded; charset=UTF-8",
-    "X-CSRF-TOKEN: R2LbLQi4qCGdZlQBpaZX8HKO3TkIrNNiCC8_OsWBTldw4bDiFD8uFLCXXAO4UthhtO4_LPPhjJOv6YhNPrvqFAFIryHqA78XsCsLyAuyp_E1",
-    "X-Requested-With: XMLHttpRequest",
-    "Origin: http://emis.gov.bd",
-    "Referer: http://emis.gov.bd/EMIS/portal",
-    "Accept-Language: en-US,en;q=0.9",
-    "Cookie: __RequestVerificationToken_L2VtaXM1=t57UIgAYXp8xI0BhiVJpQafm5DB0CP454n0H73wo6P1boE4RkAsF3-IMV5JcaTg2FLlqxqdTPRjaF14N1WqRYzmacZo6gWYX9B8qtgEA3ss1; CSRF-TOKEN=R2LbLQi4qCGdZlQBpaZX8HKO3TkIrNNiCC8_OsWBTldw4bDiFD8uFLCXXAO4UthhtO4_LPPhjJOv6YhNPrvqFAFIryHqA78XsCsLyAuyp_E1"
-];
+$ua = "Mozilla/5.0 (Linux; Android 13; 220333QAG) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.6943.138 Mobile Safari/537.36";
 
-$postData = http_build_query([
-    'instituteId' => '',
-    'EIIN'        => $eiin,
-    'isTeacher'   => 1
-]);
+// ── STEP 1: Hit portal to grab fresh Cookie + CSRF token
+$ch1 = curl_init();
+curl_setopt($ch1, CURLOPT_URL, $portal_url);
+curl_setopt($ch1, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch1, CURLOPT_HEADER, true);
+curl_setopt($ch1, CURLOPT_USERAGENT, $ua);
+curl_setopt($ch1, CURLOPT_FOLLOWLOCATION, true);
+curl_setopt($ch1, CURLOPT_TIMEOUT, 15);
+curl_setopt($ch1, CURLOPT_SSL_VERIFYPEER, false);
+curl_setopt($ch1, CURLOPT_SSL_VERIFYHOST, false);
 
-$ch = curl_init();
-curl_setopt($ch, CURLOPT_URL, $url);
-curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-curl_setopt($ch, CURLOPT_POST, true);
-curl_setopt($ch, CURLOPT_POSTFIELDS, $postData);
-curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-curl_setopt($ch, CURLOPT_HTTP_VERSION, CURL_HTTP_VERSION_1_1);
-curl_setopt($ch, CURLOPT_TIMEOUT, 15);
-curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+$res1      = curl_exec($ch1);
+$header_sz = curl_getinfo($ch1, CURLINFO_HEADER_SIZE);
+curl_close($ch1);
 
-$response = curl_exec($ch);
-$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-$curlError = curl_error($ch);
-curl_close($ch);
+$raw_headers = substr($res1, 0, $header_sz);
+$body        = substr($res1, $header_sz);
 
-if ($curlError) {
-    echo json_encode(["error" => "সংযোগ ব্যর্থ: " . $curlError]);
-    exit;
+// Extract cookies
+$cookies = [];
+preg_match_all('/Set-Cookie:\s*([^;]+)/i', $raw_headers, $m);
+foreach ($m[1] as $c) { $cookies[] = trim($c); }
+$cookie_str = implode('; ', $cookies);
+
+// Extract CSRF from meta tag or hidden input
+$csrf = '';
+if (preg_match('/<meta[^>]+name=["\']csrf-token["\'][^>]+content=["\'](.*?)["\']/i', $body, $mx)) {
+    $csrf = $mx[1];
+} elseif (preg_match('/name=["\']__RequestVerificationToken["\'][^>]+value=["\'](.*?)["\']/i', $body, $mx)) {
+    $csrf = $mx[1];
+} elseif (preg_match('/CSRF[_-]TOKEN["\s:=\']+([A-Za-z0-9_\-]+)/i', $body, $mx)) {
+    $csrf = $mx[1];
 }
 
-if ($httpCode !== 200) {
-    echo json_encode(["error" => "সার্ভার সাড়া দেয়নি", "status_code" => $httpCode]);
-    exit;
-}
-
-// Forward the response exactly
-echo $response;
-?>
+// ── STEP 2: Use extracted credentials to fetch teacher data
