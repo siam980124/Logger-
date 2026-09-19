@@ -19,19 +19,21 @@ curl_setopt($ch1, CURLOPT_TIMEOUT, 20);
 curl_setopt($ch1, CURLOPT_SSL_VERIFYPEER, false);
 curl_setopt($ch1, CURLOPT_SSL_VERIFYHOST, false);
 
-$res1      = curl_exec($ch1);
-$step1_err = curl_error($ch1);
-$step1_code= curl_getinfo($ch1, CURLINFO_HTTP_CODE);
-$header_sz = curl_getinfo($ch1, CURLINFO_HEADER_SIZE);
+$res1       = curl_exec($ch1);
+$step1_err  = curl_error($ch1);
+$step1_code = curl_getinfo($ch1, CURLINFO_HTTP_CODE);
+$header_sz  = curl_getinfo($ch1, CURLINFO_HEADER_SIZE);
 curl_close($ch1);
 
 $raw_headers = substr($res1, 0, $header_sz);
 $body        = substr($res1, $header_sz);
 
 // Extract cookies
-$cookies = [];
+$cookies = array();
 preg_match_all('/Set-Cookie:\s*([^;\r\n]+)/i', $raw_headers, $m);
-foreach ($m[1] as $c) { $cookies[] = trim($c); }
+foreach ($m[1] as $c) {
+    $cookies[] = trim($c);
+}
 $cookie_str = implode('; ', $cookies);
 
 // Extract CSRF
@@ -40,12 +42,10 @@ if (preg_match('/name=["\']__RequestVerificationToken["\'][^>]+value=["\'](.*?)[
     $csrf = $mx[1];
 } elseif (preg_match('/CSRF[_-]TOKEN["\s:=\']+([A-Za-z0-9_\-\.]+)/i', $body, $mx)) {
     $csrf = $mx[1];
-} elseif (preg_match('/content=["\'](.*?)["\']/i', implode("\n", array_filter(explode("\n", $body), fn($l) => stripos($l,'csrf')!==false)), $mx)) {
-    $csrf = $mx[1];
 }
 
 // STEP 2: POST to EMIS
-$headers2 = [
+$headers2 = array(
     "User-Agent: $ua",
     "Accept: application/json, text/javascript, */*; q=0.01",
     "Content-Type: application/x-www-form-urlencoded; charset=UTF-8",
