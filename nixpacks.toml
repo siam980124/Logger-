@@ -1,5 +1,8 @@
 [phases.setup]
-nixPkgs = ["php82", "php82Extensions.curl", "php82Extensions.mbstring"]
+nixPkgs = ["php82"]
+
+[phases.build]
+cmds = []
 
 [start]
-cmd = "php -S 0.0.0.0:$PORT -t ."
+cmd = "php -S 0.0.0.0:${PORT:-8080}"
