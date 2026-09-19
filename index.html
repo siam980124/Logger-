@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>শিক্ষক তথ্য পোর্টাল — EMIS Bangladesh</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Bengali:wght@400;600;700&family=Noto+Sans+Bengali:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink:       #0D1117;
+    --surface:   #F8F6F1;
+    --paper:     #FFFFFF;
+    --rule:      #E2DDD6;
+    --accent:    #1B4D8E;
+    --accent-lt: #2A6FC7;
+    --gold:      #B8922A;
+    --muted:     #6B6560;
+    --success:   #1A6B45;
+    --danger:    #8B1A1A;
+    --serif:     'Noto Serif Bengali', Georgia, serif;
+    --sans:      'Noto Sans Bengali', system-ui, sans-serif;
+    --mono:      'JetBrains Mono', monospace;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--surface);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  .site-header {
+    background: var(--accent);
+    color: white;
+    padding: 0;
+    border-bottom: 3px solid var(--gold);
+  }
+  .header-inner {
+    max-width: 900px;
+    margin: auto;
+    padding: 28px 24px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .emblem {
+    width: 58px;
+    height: 58px;
+    background: var(--gold);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+  .header-text h1 {
+    font-family: var(--serif);
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.3;
+  }
+  .header-text p {
+    font-size: 0.78rem;
+    opacity: 0.75;
+    margin-top: 4px;
+    font-family: var(--mono);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── SEARCH ZONE ── */
+  .search-zone {
+    background: var(--paper);
+    border-bottom: 1px solid var(--rule);
+    padding: 36px 24px;
+  }
+  .search-inner {
+    max-width: 560px;
+    margin: auto;
+  }
+  .search-inner label {
+    display: block;
+    font-family: var(--serif);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 10px;
+    letter-spacing: 0.02em;
+  }
+  .search-row {
+    display: flex;
+    gap: 10px;
+  }
+  .eiin-input {
+    flex: 1;
+    height: 50px;
+    padding: 0 16px;
+    border: 2px solid var(--rule);
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: var(--ink);
+    background: var(--surface);
+    outline: none;
+    transition: border-color 0.18s, background 0.18s;
+    letter-spacing: 0.08em;
+  }
+  .eiin-input:focus {
+    border-color: var(--accent);
+    background: #fff;
+  }
+  .eiin-input::placeholder { color: #BDB8B0; font-weight: 400; letter-spacing: 0; }
+
+  .btn-search {
+    height: 50px;
+    padding: 0 28px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--sans);
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.18s, transform 0.12s;
+    white-space: nowrap;
+  }
+  .btn-search:hover  { background: var(--accent-lt); }
+  .btn-search:active { transform: scale(0.97); }
+  .btn-search:disabled { background: #94A3B8; cursor: not-allowed; transform: none; }
+
+  .search-hint {
+    margin-top: 10px;
+    font-size: 0.77rem;
+    color: var(--muted);
+    font-family: var(--mono);
+  }
+
+  /* ── MAIN CONTENT ── */
+  .main {
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 24px 60px;
+  }
+
+  /* ── LOADING ── */
+  .loader {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 60px 0;
+    color: var(--muted);
+  }
+  .loader.active { display: flex; }
+  .spinner {
+    width: 40px; height: 40px;
+    border: 3px solid var(--rule);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loader p { font-family: var(--mono); font-size: 0.82rem; }
+
+  /* ── ERROR ── */
+  .error-box {
+    display: none;
+    background: #FEF2F2;
+    border: 1px solid #FECACA;
+    border-left: 4px solid var(--danger);
+    border-radius: 6px;
+    padding: 16px 20px;
+    color: var(--danger);
+    font-size: 0.9rem;
+    margin-bottom: 24px;
+  }
+  .error-box.active { display: block; }
+
+  /* ── RESULT CARD ── */
+  .result-card {
+    display: none;
+    background: var(--paper);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .result-card.active { display: block; }
+
+  .card-header {
+    background: var(--ink);
+    color: white;
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+  .avatar {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: var(--gold);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .teacher-name {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .teacher-sub {
+    margin-top: 4px;
+    font-size: 0.82rem;
+    color: rgba(255,255,255,0.6);
+    font-family: var(--mono);
+    letter-spacing: 0.03em;
+  }
+  .teacher-designation {
+    margin-top: 8px;
+    display: inline-block;
+    background: var(--gold);
+    color: var(--ink);
+    font-size: 0.74rem;
+    font-weight: 600;
+    padding: 3px 10px;
+    border-radius: 3px;
+    font-family: var(--sans);
+    letter-spacing: 0.02em;
+  }
+
+  /* ── INFO SECTIONS ── */
+  .section {
+    padding: 24px 28px;
+    border-top: 1px solid var(--rule);
+  }
+  .section:first-of-type { border-top: none; }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--accent);
+    margin-bottom: 16px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px 28px;
+  }
+  .info-item { display: flex; flex-direction: column; gap: 3px; }
+  .info-key {
+    font-size: 0.72rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .info-val {
+    font-size: 0.94rem;
+    font-weight: 500;
+    color: var(--ink);
+    word-break: break-word;
+  }
+  .info-val.mono { font-family: var(--mono); font-size: 0.88rem; }
+  .info-val.empty { color: var(--muted); font-style: italic; font-weight: 400; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: var(--sans);
+  }
+  .badge-green { background: #D1FAE5; color: var(--success); }
+  .badge-red   { background: #FEE2E2; color: var(--danger);  }
+  .badge-blue  { background: #DBEAFE; color: var(--accent);  }
+  .badge-gold  { background: #FEF3C7; color: #92400E; }
+
+  /* ── RAW DATA TOGGLE ── */
+  .raw-toggle {
+    margin-top: 20px;
+    font-size: 0.8rem;
+    color: var(--accent);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+  }
+  .raw-toggle:hover { text-decoration: underline; }
+  .raw-box {
+    display: none;
+    margin-top: 12px;
+    background: var(--ink);
+    color: #A8D8EA;
+    padding: 16px;
+    border-radius: 6px;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    line-height: 1.7;
+    overflow-x: auto;
+    white-space: pre;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .raw-box.active { display: block; }
+
+  /* ── EMPTY STATE ── */
+  .empty-state {
+    text-align: center;
+    padding: 64px 0;
+    color: var(--muted);
+  }
+  .empty-state .icon { font-size: 52px; margin-bottom: 16px; }
+  .empty-state p { font-size: 0.9rem; line-height: 1.8; }
+  .empty-state strong { color: var(--ink); font-weight: 600; }
+
+  /* ── FOOTER ── */
+  .site-footer {
+    text-align: center;
+    padding: 24px;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: var(--mono);
+    border-top: 1px solid var(--rule);
+    background: var(--paper);
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .search-row { flex-direction: column; }
+    .btn-search { width: 100%; justify-content: center; }
+    .card-header { flex-direction: column; text-align: center; }
+    .info-grid { grid-template-columns: 1fr; }
+    .section { padding: 18px; }
+    .header-inner { gap: 14px; }
+    .header-text h1 { font-size: 1.1rem; }
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="emblem">🎓</div>
+    <div class="header-text">
+      <h1>শিক্ষক তথ্য অনুসন্ধান পোর্টাল</h1>
+      <p>EMIS — Education Management Information System · Bangladesh</p>
+    </div>
+  </div>
+</header>
+
+<div class="search-zone">
+  <div class="search-inner">
+    <label for="einput">EIIN নম্বর দিয়ে অনুসন্ধান করুন</label>
+    <div class="search-row">
+      <input
+        type="text"
+        id="einput"
+        class="eiin-input"
+        placeholder="যেমন: 108501"
+        maxlength="8"
+        inputmode="numeric"
+        autocomplete="off"
+      >
+      <button class="btn-search" id="btn-search" onclick="search()">
+        <span>🔍</span> অনুসন্ধান
+      </button>
+    </div>
+    <div class="search-hint">EIIN সাধারণত ৫–৮ সংখ্যার হয়ে থাকে</div>
+  </div>
+</div>
+
+<main class="main">
+  <div class="empty-state" id="empty-state">
+    <div class="icon">📋</div>
+    <p><strong>EIIN নম্বর লিখুন এবং অনুসন্ধান করুন।</strong><br>
+    শিক্ষক ও প্রতিষ্ঠানের সম্পূর্ণ তথ্য এখানে দেখা যাবে।</p>
+  </div>
+
+  <div class="loader" id="loader">
+    <div class="spinner"></div>
+    <p>তথ্য লোড হচ্ছে...</p>
+  </div>
+
+  <div class="error-box" id="error-box"></div>
+
+  <div class="result-card" id="result-card">
+    <!-- Populated by JS -->
+  </div>
+</main>
+
+<footer class="site-footer">
+  তথ্যসূত্র: emis.gov.bd &nbsp;·&nbsp; সরকারি শিক্ষা ব্যবস্থাপনা তথ্য ব্যবস্থা
+</footer>
+
+<script>
+  // ── Enter key
+  document.getElementById('einput').addEventListener('keydown', e => {
+    if (e.key === 'Enter') search();
+  });
+
+  function val(v) {
+    if (v === null || v === undefined || v === '' || v === 'null') return null;
+    return String(v).trim();
+  }
+
+  function displayVal(v, cls = '') {
+    const s = val(v);
+    if (!s) return `<span class="info-val empty">তথ্য নেই</span>`;
+    return `<span class="info-val ${cls}">${s}</span>`;
+  }
+
+  function badge(v, greenVals = [], redVals = []) {
+    const s = val(v);
+    if (!s) return `<span class="info-val empty">তথ্য নেই</span>`;
+    if (greenVals.some(g => s.toLowerCase().includes(g.toLowerCase())))
+      return `<span class="badge badge-green">${s}</span>`;
+    if (redVals.some(r => s.toLowerCase().includes(r.toLowerCase())))
+      return `<span class="badge badge-red">${s}</span>`;
+    return `<span class="badge badge-blue">${s}</span>`;
+  }
+
+  function item(label, value, cls = '') {
+    return `<div class="info-item">
+      <span class="info-key">${label}</span>
+      ${cls === 'badge' ? value : displayVal(value, cls)}
+    </div>`;
+  }
+
+  function section(title, rows) {
+    return `<div class="section">
+      <div class="section-title">${title}</div>
+      <div class="info-grid">${rows.join('')}</div>
+    </div>`;
+  }
+
+  function render(data, rawJson) {
+    // Support both array-wrapped and direct object
+    const d = Array.isArray(data) ? data[0] : data;
+    if (!d) {
+      showError('কোনো তথ্য পাওয়া যায়নি।');
+      return;
+    }
+
+    // ── Teacher name display
+    const nameBn  = val(d.TeacherNameBangla) || val(d.teacherNameBangla)  || '';
+    const nameEn  = val(d.TeacherName)       || val(d.teacherName)        || val(d.Name) || '';
+    const desig   = val(d.Designation)       || val(d.designation)        || '';
+    const eiin    = val(d.EIIN)              || val(d.eiin)               || document.getElementById('einput').value;
+    const instBn  = val(d.InstituteNameBangla)|| val(d.instituteNameBangla)|| '';
+    const instEn  = val(d.InstituteName)     || val(d.instituteName)      || '';
+    const photo   = val(d.PhotoUrl)          || val(d.photoUrl)           || '';
+
+    const avatarContent = photo
+      ? `<img src="${photo}" alt="photo" onerror="this.style.display='none'">`
+      : '👤';
+
+    const html = `
+      <div class="card-header">
+        <div class="avatar">${avatarContent}</div>
+        <div>
+          <div class="teacher-name">${nameBn || nameEn || 'নাম অজানা'}</div>
+          ${nameBn && nameEn ? `<div class="teacher-sub">${nameEn}</div>` : ''}
+          ${desig ? `<div class="teacher-designation">${desig}</div>` : ''}
+        </div>
+      </div>
+
+      ${section('মূল পরিচয়', [
+        item('EIIN নম্বর',       eiin,                          'mono'),
+        item('NID নম্বর',        d.NationalId || d.nationalId || d.NID, 'mono'),
+        item('জন্ম তারিখ',      d.DateOfBirth || d.dateOfBirth),
+        item('লিঙ্গ',            d.Gender || d.gender),
+        item('ধর্ম',             d.Religion || d.religion),
+        item('মোবাইল',          d.MobileNo || d.mobileNo || d.Mobile, 'mono'),
+        item('ইমেইল',           d.Email || d.email),
+      ])}
+
+      ${section('প্রতিষ্ঠানের তথ্য', [
+        item('প্রতিষ্ঠানের নাম (বাংলা)', instBn),
+        item('প্রতিষ্ঠানের নাম (English)', instEn),
+        item('প্রতিষ্ঠান আইডি',  d.InstituteId || d.instituteId,      'mono'),
+        item('জেলা',             d.District || d.district),
+        item('উপজেলা',          d.Upazila || d.upazila),
+        item('বিভাগ',            d.Division || d.division),
+      ])}
+
+      ${section('শিক্ষাগত ও পেশাগত', [
+        item('পদবি',             desig),
+        item('বিষয়',            d.Subject || d.subject),
+        item('শিক্ষাগত যোগ্যতা', d.AcademicQualification || d.academicQualification),
+        item('যোগদানের তারিখ',   d.JoiningDate || d.joiningDate),
+        item('মাধ্যম',           d.MediumName || d.mediumName),
+        item('স্তর',             d.LevelName || d.levelName),
+        item('শ্রেণী ধরন',       d.VersionName || d.versionName),
+      ])}
+
+      ${section('স্ট্যাটাস', [
+        item('বর্তমান অবস্থা',  badge(
+          d.Status || d.status || d.ActiveStatus,
+          ['active','সক্রিয়','কার্যরত'],
+          ['inactive','নিষ্ক্রিয়','বরখাস্ত']
+        ), 'badge'),
+        item('এমপিও স্ট্যাটাস',  badge(
+          d.MPOStatus || d.mpoStatus,
+          ['mpo','এমপিও'],
+          ['non-mpo','বেসরকারি']
+        ), 'badge'),
+        item('যাচাই স্ট্যাটাস',  badge(
+          d.VerificationStatus || d.verificationStatus,
+          ['verified','যাচাই'],
+          ['unverified']
+        ), 'badge'),
+      ])}
+
+      <div class="section">
+        <button class="raw-toggle" onclick="toggleRaw()">
+          <span id="raw-arrow">▶</span> কাঁচা JSON ডেটা দেখুন
+        </button>
+        <div class="raw-box" id="raw-box">${rawJson}</div>
+      </div>
+    `;
+
+    const card = document.getElementById('result-card');
+    card.innerHTML = html;
+    card.classList.add('active');
+  }
+
+  function toggleRaw() {
+    const box = document.getElementById('raw-box');
+    const arrow = document.getElementById('raw-arrow');
+    const active = box.classList.toggle('active');
+    arrow.textContent = active ? '▼' : '▶';
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('error-box');
+    el.textContent = '⚠ ' + msg;
+    el.classList.add('active');
+  }
+
+  function setLoading(on) {
+    document.getElementById('loader').classList.toggle('active', on);
+    document.getElementById('btn-search').disabled = on;
+  }
+
+  function clearAll() {
+    document.getElementById('error-box').classList.remove('active');
+    document.getElementById('result-card').classList.remove('active');
+    document.getElementById('empty-state').style.display = 'none';
+    document.getElementById('result-card').innerHTML = '';
+  }
+
+  async function search() {
+    const eiin = document.getElementById('einput').value.trim();
+    if (!eiin) {
+      showError('অনুগ্রহ করে EIIN নম্বর লিখুন।');
+      return;
+    }
+    if (!/^\d+$/.test(eiin)) {
+      showError('EIIN শুধুমাত্র সংখ্যা হতে পারে।');
+      return;
+    }
+
+    clearAll();
+    setLoading(true);
+
+    try {
+      // ── Point this at your api.php location
+      const res  = await fetch(`api.php?eiin=${encodeURIComponent(eiin)}`);
+      const text = await res.text();
+      const rawPretty = (() => {
+        try { return JSON.stringify(JSON.parse(text), null, 2); }
+        catch { return text; }
+      })();
+
+      let data;
+      try { data = JSON.parse(text); }
+      catch {
+        showError('সার্ভার থেকে অবৈধ উত্তর পাওয়া গেছে।');
+        return;
+      }
+
+      if (data && data.error) {
+        showError(data.error);
+        return;
+      }
+
+      render(data, rawPretty);
+    } catch (err) {
+      showError('সার্ভারে সংযোগ করতে পারেনি। api.php ফাইলটি একই ফোল্ডারে রাখুন।');
+    } finally {
+      setLoading(false);
+    }
+  }
+</script>
+</body>
+</html>
